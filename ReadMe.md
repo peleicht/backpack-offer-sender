@@ -24,6 +24,12 @@ This browser plugin adds a button to backpack.tf listings, which will instantly 
 
 - Wow!
 
+### Disclaimer
+
+I cannot guarantee the script will always work flawlessly. Therefore make sure to <ins>always double check the offer</ins> before confirming it.
+
+**I take no responsibility for any damage caused.**
+
 ---
 
 ### License
