@@ -1,9 +1,12 @@
 // ==UserScript==
 // @name         Instant Offer Sender
-// @namespace    https://github.com/peleicht
+// @namespace    https://github.com/peleicht/backpack-offer-sender
+// @homepage     https://github.com/peleicht
 // @version      1.0
 // @description  Adds a button on backpack.tf listings that instantly sends the offer.
 // @author       Brom127
+// @updateURL    https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
+// @downloadURL  https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
 // @include      /^https?:\/\/backpack\.tf\/(stats|classifieds|u).*/
 // @include      https://steamcommunity.com/tradeoffer/new*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=backpack.tf
