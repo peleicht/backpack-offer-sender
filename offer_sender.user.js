@@ -2,7 +2,7 @@
 // @name         Instant Offer Sender
 // @namespace    https://github.com/peleicht/backpack-offer-sender
 // @homepage     https://github.com/peleicht
-// @version      1.1.1
+// @version      1.1.2
 // @description  Adds a button on backpack.tf listings that instantly sends the offer.
 // @author       Brom127
 // @updateURL    https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
@@ -19,6 +19,8 @@ const allow_change = true;
 const btn_color = "#02d6d6";
 const next_btn_color = "#00ffff";
 const btn_text = "Send Tradeoffer automatically.";
+
+let internal_request_sent = false;
 
 (async function () {
 	"use strict";
@@ -121,7 +123,7 @@ const btn_text = "Send Tradeoffer automatically.";
 		const items_to_give = [];
 		const items_to_receive = [];
 
-		const [our_inventory, their_inventory] = await Promise.all([getInventory(g_steamID), getInventory(g_ulTradePartnerSteamID)]);
+		const [our_inventory, their_inventory] = await getInventories();
 		window.our_inv = our_inventory;
 		window.their_inv = their_inventory;
 
@@ -174,6 +176,69 @@ const btn_text = "Send Tradeoffer automatically.";
 	}
 })();
 
+function getInventories() {
+	return new Promise(async res => {
+		while (!UserYou.rgContexts["440"]) {
+			await waitFor(0.1);
+		}
+
+		if (!internal_request_sent) UserYou.getInventory(440, 2);
+		UserThem.LoadForeignAppContextData(g_ulTradePartnerSteamID, 440, 2);
+
+		let done = false;
+		setTimeout(() => {
+			if (!done) throwError("Timeout waiting for inventory data.");
+		}, 15000);
+
+		const inventories = await Promise.all([getSingleInventory(UserYou), getSingleInventory(UserThem)]);
+		done = true;
+
+		res(inventories);
+	});
+
+	function getSingleInventory(User) {
+		return new Promise(async res => {
+			let inv = User.rgContexts["440"]["2"].inventory?.rgItemElements;
+			if (!inv || User.cLoadsInFlight != 0) {
+				if (User.cLoadsInFlight == 0) User.loadInventory();
+				inv = await waitForInventoryLoad();
+			} else inv = inv.map(item => item.rgItem);
+
+			res(parseInventory(inv));
+		});
+
+		function waitForInventoryLoad() {
+			return new Promise(async res => {
+				const on_load = UserThem.OnLoadInventoryComplete;
+				User.OnLoadInventoryComplete = function (data, appid, contextid) {
+					if (appid == 440 && contextid == 2) {
+						res(Object.values(data.responseJSON.rgInventory));
+					}
+					return on_load.apply(this, arguments);
+				};
+				const on_fail = UserThem.OnLoadInventoryComplete;
+				User.OnInventoryLoadFailed = async function (data, appid, contextid) {
+					if (appid == 440 && contextid == 2) {
+						console.log("load failed, requesting manually");
+						const inv = await getInventory(g_ulTradePartnerSteamID);
+						res(inv);
+					}
+					return on_fail.apply(this, arguments);
+				};
+			});
+		}
+	}
+
+	function parseInventory(items) {
+		return items.map(item => {
+			return {
+				id: item.id,
+				name: nameFromItem(item),
+			};
+		});
+	}
+}
+
 async function getInventory(steam_id) {
 	let body;
 	try {
@@ -198,13 +263,9 @@ async function getInventory(steam_id) {
 
 	for (let i = 0; i < body.assets.length; i++) {
 		const description = getDescription(body.descriptions, body.assets[i].classid, body.assets[i].instanceid);
-		inv.push({
-			id: body.assets[i].assetid,
-			name: nameFromItem(description),
-		});
-		/* description.id = body.assets[i].assetid; //more info for debugging
+		description.id = body.assets[i].assetid;
 		description.name = nameFromItem(description);
-		inv.push(JSON.parse(JSON.stringify(description))); */
+		inv.push(JSON.parse(JSON.stringify(description)));
 	}
 
 	return inv;
@@ -459,14 +520,14 @@ function pickCurrency(inventory, keys, ref, rec, scrap) {
 }
 
 /**
- * Intercepts the normal inventory request sent by the page window, so it doesn't contribute to inventory rate limits.
- * Side effect: prevents the inventory from loading.
+ * Sets internal_request_sent to true once a request to the internal inventory api has been made.
  */
 function interceptInventoryRequest() {
 	let old_open = XMLHttpRequest.prototype.open;
 	XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
-		if (url.endsWith("?trading=1")) {
-			return;
+		if (url.endsWith("/json/440/2/?trading=1")) {
+			internal_request_sent = true;
+			XMLHttpRequest.prototype.open = old_open;
 		}
 
 		return old_open.apply(this, arguments);
@@ -478,6 +539,10 @@ function awaitReady() {
 		if (document.readyState != "loading") res();
 		else document.addEventListener("DOMContentLoaded", res);
 	});
+}
+
+function waitFor(seconds) {
+	return new Promise(res => setTimeout(res, seconds * 1000));
 }
 
 function throwError(err) {
