@@ -2,20 +2,21 @@
 // @name         Instant Offer Sender
 // @namespace    https://github.com/peleicht/backpack-offer-sender
 // @homepage     https://github.com/peleicht
-// @version      1.0
+// @version      1.1
 // @description  Adds a button on backpack.tf listings that instantly sends the offer.
 // @author       Brom127
 // @updateURL    https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
 // @downloadURL  https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
 // @include      /^https?:\/\/backpack\.tf\/(stats|classifieds|u).*/
+// @include      /^https?:\/\/next\.backpack\.tf\/(stats|classifieds|profiles\/\d+\/listings).*/
 // @include      https://steamcommunity.com/tradeoffer/new*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=backpack.tf
+// @icon         data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💠</text></svg>
 // @run-at       document-start
 // @grant        none
 // ==/UserScript==
 
 const allow_change = true;
-const btn_color = "#00d0ff";
+const btn_color = "#00ffff";
 const btn_text = "Send Tradeoffer automatically.";
 
 (async function () {
@@ -55,8 +56,8 @@ const btn_text = "Send Tradeoffer automatically.";
 
 			const btn_selector = "#" + order.id + " > div.listing-body > div.listing-header > div.listing-buttons > a.btn.btn-bottom.btn-xs.btn-";
 			let send_offer_btn = document.querySelector(btn_selector + "success");
-			if (!send_offer_btn) send_offer_btn = document.querySelector(btn_selector + "primary");
-			if (!send_offer_btn || send_offer_btn.getAttribute("href").startsWith("steam://")) continue;
+			if (!send_offer_btn) send_offer_btn = document.querySelector(btn_selector + "primary"); //button is blue (negotiable listing)
+			if (!send_offer_btn || send_offer_btn.getAttribute("href").startsWith("steam://")) continue; //no tradeoffer button, stop
 
 			//add new button
 			const btn_clone = send_offer_btn.cloneNode(true);
@@ -72,6 +73,42 @@ const btn_text = "Send Tradeoffer automatically.";
 			}
 
 			document.querySelector("#" + order.id + " > div.listing-body > div.listing-header > div.listing-buttons").append(btn_clone);
+		}
+	} else if (location.hostname == "next.backpack.tf" && location.pathname.match(/\/(stats|classifieds|profiles\/\d+\/listings)/)) {
+		await awaitReady();
+
+		//add new button with item and price info in url query (for next.backpack.tf)
+		let listings = Array.from(document.getElementsByClassName("listing"));
+
+		for (let listing of listings) {
+			const header = listing.children[0].children[1].children[0]; //everythings a div, nothing has an id why ;(
+
+			const item_name = header.children[0].innerText
+				.trim()
+				.replace("\n", " ")
+				.replace(/ #\d+$/, ""); //\n and # dont work in urls
+
+			const info = listing.children[0].children[0];
+			const price = info.children[1].innerText.trim();
+			if (header.getElementsByClassName("text-buy").length != 0) {
+				const special_traits = Array.from(info.children[0].children).map(e => e.getAttribute("class"));
+				for (let trait of special_traits) {
+					if (trait != "item__icons__icon attribute__killstreaker") continue; //ignore modified buy orders for now
+				}
+			}
+
+			const btn_box = header.getElementsByClassName("listing__details__actions")[0];
+			let send_offer_btn = btn_box.getElementsByClassName("listing__details__actions__action")[0];
+			if (!send_offer_btn || send_offer_btn.getAttribute("href").startsWith("steam://")) continue;
+
+			//add new button
+			const btn_clone = send_offer_btn.cloneNode(true);
+			const url = encodeURI(send_offer_btn.getAttribute("href") + "&tscript_price=" + price + "&tscript_name=" + item_name);
+			btn_clone.setAttribute("href", url);
+			const icon = btn_clone.children[0];
+			icon.style.color = btn_color;
+
+			btn_box.append(btn_clone);
 		}
 	} else if (location.hostname == "steamcommunity.com" && location.pathname.startsWith("/tradeoffer/new")) {
 		const params = new URLSearchParams(location.search);

@@ -4,7 +4,9 @@ This browser plugin adds a button to backpack.tf listings, which will instantly 
 
 ### Features
 
-- Adds Button that sends the offer for you
+- Adds a Button that sends the offer for you
+- Supports both [Classic](https://backpack.tf) and [Next](https://next.backpack.tf) backpack.tf
+- Supports practically every buy and sell order
 - Makes use of change
 - Avoids reusing the same items
 
@@ -12,7 +14,7 @@ This browser plugin adds a button to backpack.tf listings, which will instantly 
 
 - Install [Tampermonkey](https://www.tampermonkey.net/)
 - [Open the script](https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js)
-- Install
+- Click Install
 
 ### Usage
 
@@ -31,8 +33,6 @@ This browser plugin adds a button to backpack.tf listings, which will instantly 
 ### Disclaimer
 
 I cannot guarantee the script will always work flawlessly. Therefore make sure to <ins>always double check the offer</ins> before confirming it.
-
-**I take no responsibility for any damages caused.**
 
 ---
 
