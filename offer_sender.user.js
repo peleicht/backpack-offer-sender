@@ -379,7 +379,7 @@ function toCurrencyTypes(currency_string) {
 	const rec = Math.floor(small_metal / 33);
 	const scrap = (small_metal / 11) % 3;
 
-	if (String(small_metal)[0] != String(small_metal)[1]) return throwError("Invalid currency " + currency_string);
+	if (small_metal != 0 && String(small_metal)[0] != String(small_metal)[1]) return throwError("Invalid currency " + currency_string);
 
 	return [keys, ref, rec, scrap];
 }
