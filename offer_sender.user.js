@@ -2,7 +2,7 @@
 // @name         Instant Offer Sender
 // @namespace    https://github.com/peleicht/backpack-offer-sender
 // @homepage     https://github.com/peleicht
-// @version      1.1.3
+// @version      1.2.0
 // @description  Adds a button on backpack.tf listings that instantly sends the offer.
 // @author       Brom127
 // @updateURL    https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
@@ -12,7 +12,6 @@
 // @include      https://steamcommunity.com/tradeoffer/new*
 // @icon         data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💠</text></svg>
 // @run-at       document-start
-// @grant        none
 // ==/UserScript==
 
 const allow_change = true;
@@ -22,11 +21,13 @@ const btn_text = "Send Tradeoffer automatically.";
 
 let internal_request_sent = false;
 
-(async function () {
+main();
+
+async function main() {
 	"use strict";
 
 	if (location.hostname == "backpack.tf" && location.pathname.match(/\/(stats|classifieds|u)/)) {
-		await awaitReady();
+		await awaitDocumentReady();
 
 		//add new button with item and price info in url query
 		const list_elements = document.getElementsByClassName("media-list");
@@ -45,6 +46,8 @@ let internal_request_sent = false;
 
 			const info = document.querySelector("#" + order.id + " > div.listing-item > div");
 			const price = info.getAttribute("data-listing_price");
+
+			let item_id_text = "";
 			if (info.getAttribute("data-listing_intent") == "buy") {
 				const attributes = ["data-spell_1", "data-part_name_1", "data-killstreaker", "data-sheen", "data-level", "data-paint_name", "", "", "", ""];
 				let modified = false;
@@ -55,6 +58,8 @@ let internal_request_sent = false;
 					}
 				}
 				if (modified) continue; //ignore modified buy orders for now
+			} else {
+				item_id_text = "&tscript_id=" + info.getAttribute("data-id");
 			}
 
 			const btn_selector = "#" + order.id + " > div.listing-body > div.listing-header > div.listing-buttons > a.btn.btn-bottom.btn-xs.btn-";
@@ -64,7 +69,7 @@ let internal_request_sent = false;
 
 			//add new button
 			const btn_clone = send_offer_btn.cloneNode(true);
-			const url = encodeURI(btn_clone.getAttribute("href") + "&tscript_price=" + price + "&tscript_name=" + item_name);
+			const url = encodeURI(btn_clone.getAttribute("href") + item_id_text + "&tscript_price=" + price + "&tscript_name=" + item_name);
 			btn_clone.setAttribute("href", url);
 			btn_clone.style.backgroundColor = btn_color;
 			btn_clone.style.borderColor = btn_color;
@@ -78,49 +83,95 @@ let internal_request_sent = false;
 			document.querySelector("#" + order.id + " > div.listing-body > div.listing-header > div.listing-buttons").append(btn_clone);
 		}
 	} else if (location.hostname == "next.backpack.tf" && location.pathname.match(/\/(stats|classifieds|profiles\/\d+\/listings)/)) {
-		await awaitReady();
-
-		//add new button with item and price info in url query (for next.backpack.tf)
-		let listings = Array.from(document.getElementsByClassName("listing"));
-
-		for (let listing of listings) {
-			const header = listing.children[0].children[1].children[0]; //everythings a div, nothing has an id why ;(
-
-			const item_name = header.children[0].innerText
-				.trim()
-				.replace("\n", " ")
-				.replace(/ #\d+$/, ""); //\n and # dont work in urls
-
-			const info = listing.children[0].children[0];
-			const price = priceFromListing(info);
-
-			if (header.getElementsByClassName("text-buy").length != 0) {
-				const special_traits = Array.from(info.children[0].children).map(e => e.getAttribute("class"));
-				for (let trait of special_traits) {
-					if (trait != "item__icons__icon attribute__killstreaker") continue; //ignore modified buy orders for now
-				}
+		let listings_data = undefined;
+		interceptSearchRequests();
+		if (location.pathname.startsWith("/stats")) {
+			await awaitDocumentReady();
+			while (!__NUXT__?.fetch || !__NUXT__.fetch["data-v-58d43071:0"]) {
+				let t = __NUXT__.fetch["data-v-58d43071:0"];
+				await waitFor(0.1); //wait for listings request ready
 			}
+			const listings = __NUXT__.fetch["data-v-58d43071:0"].listings;
+			listings_data = listings.buy.items.concat(listings.sell.items);
+			addSenderButtons();
+		}
 
-			const btn_box = header.getElementsByClassName("listing__details__actions")[0];
-			let send_offer_btn = btn_box.getElementsByClassName("listing__details__actions__action")[0];
-			const href = send_offer_btn.getAttribute("href");
-			if (!href || href.startsWith("steam://")) continue;
+		/**
+		 * Intercepts the classifieds search results and adds buttons once data is ready
+		 */
+		function interceptSearchRequests() {
+			let old_open = XMLHttpRequest.prototype.open;
+			XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
+				if (url.match(/https:\/\/next\.backpack\.tf\/cors\/_classifieds\/(search|item)/)) {
+					const this_ref = this;
+					(async () => {
+						while (true) {
+							await waitFor(0.1);
+							if (this_ref.readyState == 4) {
+								const listings = JSON.parse(this_ref.responseText);
+								listings_data = listings.buy.items.concat(listings.sell.items);
+								await awaitDocumentReady();
+								await waitFor(0.2);
+								console.log("go!");
+								addSenderButtons();
+								break;
+							}
+						}
+					})();
+				}
 
-			//add new button
-			const btn_clone = send_offer_btn.cloneNode(true);
-			const url = encodeURI(href + "&tscript_price=" + price + "&tscript_name=" + item_name);
-			btn_clone.setAttribute("href", url);
-			const icon = btn_clone.children[0];
-			icon.style.color = next_btn_color;
+				return old_open.apply(this, arguments);
+			};
+		}
 
-			btn_box.append(btn_clone);
+		function addSenderButtons() {
+			//add new button with item and price info in url query (for next.backpack.tf)
+			let listings = Array.from(document.getElementsByClassName("listing"));
+
+			for (let listing of listings) {
+				const header = listing.children[0].children[1].children[0]; //everythings a div, nothing has an id why ;(
+
+				const item_name = header.children[0].innerText
+					.trim()
+					.replace("\n", " ")
+					.replace(/ #\d+$/, ""); //\n and # dont work in urls
+
+				const info = listing.children[0].children[0];
+				const id = info.getAttribute("href").replace("/classifieds/", "");
+				const price = listings_data.find(l => l.id == id).value.long;
+
+				let item_id_text = "";
+				if (header.getElementsByClassName("text-buy").length != 0) {
+					const special_traits = Array.from(info.children[0].children).map(e => e.getAttribute("class"));
+					for (let trait of special_traits) {
+						if (trait != "item__icons__icon attribute__killstreaker") continue; //ignore modified buy orders for now
+					}
+				} else {
+					const id = /\/classifieds\/440_(\d+)/.exec(info.getAttribute("href"));
+					item_id_text = "&tscript_id=" + id[1];
+				}
+
+				const btn_box = header.getElementsByClassName("listing__details__actions")[0];
+				let send_offer_btn = btn_box.getElementsByClassName("listing__details__actions__action")[0];
+				const href = send_offer_btn.getAttribute("href");
+				if (!href || href.startsWith("steam://")) continue;
+
+				//add new button
+				const btn_clone = send_offer_btn.cloneNode(true);
+				const url = encodeURI(href + item_id_text + "&tscript_price=" + price + "&tscript_name=" + item_name);
+				btn_clone.setAttribute("href", url);
+				const icon = btn_clone.children[0];
+				icon.style.color = next_btn_color;
+
+				btn_box.append(btn_clone);
+			}
 		}
 	} else if (location.hostname == "steamcommunity.com" && location.pathname.startsWith("/tradeoffer/new")) {
 		const params = new URLSearchParams(location.search);
 		if (!params.has("tscript_price")) return;
 
 		interceptInventoryRequest();
-		await awaitReady();
+		await awaitDocumentReady();
 
 		const items_to_give = [];
 		const items_to_receive = [];
@@ -129,7 +180,7 @@ let internal_request_sent = false;
 		window.our_inv = our_inventory;
 		window.their_inv = their_inventory;
 
-		if (!params.has("for_item")) {
+		if (!params.has("tscript_id")) {
 			//sell your item
 			const needed_item_name = params.get("tscript_name").replace("u0023", "#");
 			const needed_item = our_inventory.find(i => i.name == needed_item_name);
@@ -150,7 +201,7 @@ let internal_request_sent = false;
 			for (let c of their_currency) items_to_receive.push(toTradeOfferItem(c.id));
 		} else {
 			//buy partners item
-			const item_id = params.get("for_item").slice(6);
+			const item_id = params.get("tscript_id");
 			let needed_item = their_inventory.find(i => i.id == item_id);
 			if (!needed_item) {
 				const needed_item_name = params.get("tscript_name").replace("u0023", "#"); //get other instance of same item if item with exact id already sold
@@ -176,7 +227,7 @@ let internal_request_sent = false;
 		await sendOffer(items_to_give, items_to_receive);
 		window.close(); //success
 	}
-})();
+}
 
 function getInventories() {
 	return new Promise(async res => {
@@ -360,14 +411,6 @@ function toTradeOfferItem(id) {
 		assetid: id,
 	};
 }
-
-function priceFromListing(info) {
-	const id = info.getAttribute("href").replace("/classifieds/", "");
-	const listings = window.__NUXT__.fetch["data-v-58d43071:0"].listings;
-	const listings_arr = listings.buy.items.concat(listings.sell.items);
-	const listing = listings_arr.find(l => l.id == id);
-	return listing.value.long;
-}
 function toCurrencyTypes(currency_string) {
 	const match = currency_string.match(/^(\d+ keys?,? ?)?(\d+(?:\.\d+)? ref)?$/);
 	if (!match) return throwError("Could not parse currency " + currency_string);
@@ -543,12 +586,8 @@ function interceptInventoryRequest() {
 	};
 }
 
-function awaitReady() {
+function awaitDocumentReady() {
 	return new Promise(async res => {
-		if (location.hostname == "next.backpack.tf") {
-			while (!window.__NUXT__?.fetch || !window.__NUXT__.fetch["data-v-58d43071:0"]) await waitFor(0.1); //wait for listings request ready
-		}
-
 		if (document.readyState != "loading") res();
 		else document.addEventListener("DOMContentLoaded", res);
 	});
