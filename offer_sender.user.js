@@ -2,7 +2,7 @@
 // @name         Instant Offer Sender
 // @namespace    https://github.com/peleicht/backpack-offer-sender
 // @homepage     https://github.com/peleicht
-// @version      1.1.2
+// @version      1.1.3
 // @description  Adds a button on backpack.tf listings that instantly sends the offer.
 // @author       Brom127
 // @updateURL    https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
@@ -92,7 +92,8 @@ let internal_request_sent = false;
 				.replace(/ #\d+$/, ""); //\n and # dont work in urls
 
 			const info = listing.children[0].children[0];
-			const price = info.children[1].innerText.trim();
+			const price = priceFromListing(info);
+
 			if (header.getElementsByClassName("text-buy").length != 0) {
 				const special_traits = Array.from(info.children[0].children).map(e => e.getAttribute("class"));
 				for (let trait of special_traits) {
@@ -102,11 +103,12 @@ let internal_request_sent = false;
 
 			const btn_box = header.getElementsByClassName("listing__details__actions")[0];
 			let send_offer_btn = btn_box.getElementsByClassName("listing__details__actions__action")[0];
-			if (!send_offer_btn || send_offer_btn.getAttribute("href").startsWith("steam://")) continue;
+			const href = send_offer_btn.getAttribute("href");
+			if (!href || href.startsWith("steam://")) continue;
 
 			//add new button
 			const btn_clone = send_offer_btn.cloneNode(true);
-			const url = encodeURI(send_offer_btn.getAttribute("href") + "&tscript_price=" + price + "&tscript_name=" + item_name);
+			const url = encodeURI(href + "&tscript_price=" + price + "&tscript_name=" + item_name);
 			btn_clone.setAttribute("href", url);
 			const icon = btn_clone.children[0];
 			icon.style.color = next_btn_color;
@@ -359,6 +361,13 @@ function toTradeOfferItem(id) {
 	};
 }
 
+function priceFromListing(info) {
+	const id = info.getAttribute("href").replace("/classifieds/", "");
+	const listings = window.__NUXT__.fetch["data-v-58d43071:0"].listings;
+	const listings_arr = listings.buy.items.concat(listings.sell.items);
+	const listing = listings_arr.find(l => l.id == id);
+	return listing.value.long;
+}
 function toCurrencyTypes(currency_string) {
 	const match = currency_string.match(/^(\d+ keys?,? ?)?(\d+(?:\.\d+)? ref)?$/);
 	if (!match) return throwError("Could not parse currency " + currency_string);
@@ -535,7 +544,11 @@ function interceptInventoryRequest() {
 }
 
 function awaitReady() {
-	return new Promise(res => {
+	return new Promise(async res => {
+		if (location.hostname == "next.backpack.tf") {
+			while (!window.__NUXT__?.fetch || !window.__NUXT__.fetch["data-v-58d43071:0"]) await waitFor(0.1); //wait for listings request ready
+		}
+
 		if (document.readyState != "loading") res();
 		else document.addEventListener("DOMContentLoaded", res);
 	});
