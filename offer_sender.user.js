@@ -88,11 +88,10 @@ async function main() {
 		interceptSearchRequests();
 		if (location.pathname.startsWith("/stats")) {
 			await awaitDocumentReady();
-			while (!__NUXT__?.fetch || !__NUXT__.fetch["data-v-58d43071:0"]) {
-				let t = __NUXT__.fetch["data-v-58d43071:0"];
+			while (!unsafeWindow.__NUXT__?.fetch || !unsafeWindow.__NUXT__.fetch["data-v-58d43071:0"]) {
 				await waitFor(0.1); //wait for listings request ready
 			}
-			const listings = __NUXT__.fetch["data-v-58d43071:0"].listings;
+			const listings = unsafeWindow.__NUXT__.fetch["data-v-58d43071:0"].listings;
 			listings_data = listings.buy.items.concat(listings.sell.items);
 			addSenderButtons();
 		}
@@ -113,7 +112,6 @@ async function main() {
 								listings_data = listings.buy.items.concat(listings.sell.items);
 								await awaitDocumentReady();
 								await waitFor(0.2);
-								console.log("go!");
 								addSenderButtons();
 								break;
 							}
@@ -178,8 +176,6 @@ async function main() {
 		const items_to_receive = [];
 
 		const [our_inventory, their_inventory] = await getInventories();
-		window.our_inv = our_inventory;
-		window.their_inv = their_inventory;
 
 		if (!params.has("tscript_id")) {
 			//sell your item
@@ -232,19 +228,19 @@ async function main() {
 
 function getInventories() {
 	return new Promise(async res => {
-		while (!UserYou.rgContexts["440"]) {
+		while (!unsafeWindow.UserYou.rgContexts["440"]) {
 			await waitFor(0.1);
 		}
 
-		if (!internal_request_sent) UserYou.getInventory(440, 2);
-		UserThem.LoadForeignAppContextData(g_ulTradePartnerSteamID, 440, 2);
+		if (!internal_request_sent) unsafeWindow.UserYou.getInventory(440, 2);
+		unsafeWindow.UserThem.LoadForeignAppContextData(unsafeWindow.g_ulTradePartnerSteamID, 440, 2);
 
 		let done = false;
 		setTimeout(() => {
 			if (!done) throwError("Timeout waiting for inventory data.");
 		}, 15000);
 
-		const inventories = await Promise.all([getSingleInventory(UserYou), getSingleInventory(UserThem)]);
+		const inventories = await Promise.all([getSingleInventory(unsafeWindow.UserYou), getSingleInventory(unsafeWindow.UserThem)]);
 		done = true;
 
 		res(inventories);
@@ -258,38 +254,36 @@ function getInventories() {
 				inv = await waitForInventoryLoad();
 			} else inv = inv.map(item => item.rgItem);
 
-			res(parseInventory(inv));
+			inv = inv.map(item => {
+				return {
+					id: item.id,
+					name: nameFromItem(item),
+				};
+			});
+
+			res(inv);
 		});
 
 		function waitForInventoryLoad() {
 			return new Promise(async res => {
-				const on_load = UserThem.OnLoadInventoryComplete;
+				const on_load = User.OnLoadInventoryComplete;
 				User.OnLoadInventoryComplete = function (data, appid, contextid) {
 					if (appid == 440 && contextid == 2) {
 						res(Object.values(data.responseJSON.rgInventory));
 					}
 					return on_load.apply(this, arguments);
 				};
-				const on_fail = UserThem.OnLoadInventoryComplete;
+				const on_fail = User.OnLoadInventoryComplete;
 				User.OnInventoryLoadFailed = async function (data, appid, contextid) {
 					if (appid == 440 && contextid == 2) {
 						console.log("load failed, requesting manually");
-						const inv = await getInventory(g_ulTradePartnerSteamID);
+						const inv = await getInventory(User.strSteamId);
 						res(inv);
 					}
 					return on_fail.apply(this, arguments);
 				};
 			});
 		}
-	}
-
-	function parseInventory(items) {
-		return items.map(item => {
-			return {
-				id: item.id,
-				name: nameFromItem(item),
-			};
-		});
 	}
 }
 
