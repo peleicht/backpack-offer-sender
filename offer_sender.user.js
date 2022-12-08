@@ -8,7 +8,7 @@
 // @updateURL    https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
 // @downloadURL  https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
 // @include      /^https?:\/\/backpack\.tf\/(stats|classifieds|u).*/
-// @include      /^https?:\/\/next\.backpack\.tf\/(stats|classifieds|profiles\/\d+\/listings).*/
+// @include      /^https?:\/\/next\.backpack\.tf\/.*/
 // @include      https://steamcommunity.com/tradeoffer/new*
 // @icon         data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💠</text></svg>
 // @run-at       document-start
@@ -82,7 +82,8 @@ async function main() {
 
 			document.querySelector("#" + order.id + " > div.listing-body > div.listing-header > div.listing-buttons").append(btn_clone);
 		}
-	} else if (location.hostname == "next.backpack.tf" && location.pathname.match(/\/(stats|classifieds|profiles\/\d+\/listings)/)) {
+	} else if (location.hostname == "next.backpack.tf") {
+		//next does not refresh page between pages, so script needs to run on any next page
 		let listings_data = undefined;
 		interceptSearchRequests();
 		if (location.pathname.startsWith("/stats")) {
