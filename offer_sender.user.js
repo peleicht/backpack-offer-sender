@@ -225,8 +225,8 @@ async function main() {
 			for (let c of our_currency) items_to_give.push(toTradeOfferItem(c.id));
 		}
 
-		await sendOffer(items_to_give, items_to_receive);
-		window.close(); //success
+		const offer_id = await sendOffer(items_to_give, items_to_receive);
+		if (offer_id) window.close(); //success
 	}
 }
 
@@ -372,10 +372,10 @@ async function sendOffer(items_to_give, items_to_receive) {
 			})
 		).json();
 
+		if (response_body.strError) return throwError(response_body.strError);
+
 		return response_body.tradeofferid;
-	} catch (err) {
-		throwError("Could not send offer: " + err);
-	}
+	} catch {}
 }
 
 function nameFromItem(item) {

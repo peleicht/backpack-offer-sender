@@ -36,6 +36,10 @@ I cannot guarantee the script will always work flawlessly. Therefore make sure t
 
 ---
 
+Greasemonkey is not supported for now. However, the [Tampermonkey](https://www.tampermonkey.net/) plugin for Firefox does work.
+
+---
+
 ### License
 
 MIT
