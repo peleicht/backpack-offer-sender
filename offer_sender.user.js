@@ -263,18 +263,18 @@ function getInventories() {
 
 		function waitForInventoryLoad() {
 			return new Promise(async res => {
-				const on_load = UserThem.OnLoadInventoryComplete;
+				const on_load = User.OnLoadInventoryComplete;
 				User.OnLoadInventoryComplete = function (data, appid, contextid) {
 					if (appid == 440 && contextid == 2) {
 						res(Object.values(data.responseJSON.rgInventory));
 					}
 					return on_load.apply(this, arguments);
 				};
-				const on_fail = UserThem.OnLoadInventoryComplete;
+				const on_fail = User.OnLoadInventoryComplete;
 				User.OnInventoryLoadFailed = async function (data, appid, contextid) {
 					if (appid == 440 && contextid == 2) {
 						console.log("load failed, requesting manually");
-						const inv = await getInventory(g_ulTradePartnerSteamID);
+						const inv = await getInventory(User.strSteamId);
 						res(inv);
 					}
 					return on_fail.apply(this, arguments);
