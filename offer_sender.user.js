@@ -252,31 +252,54 @@ function getInventories() {
 
 	function getSingleInventory(User) {
 		return new Promise(async res => {
-			let inv = User.rgContexts["440"]["2"].inventory?.rgItemElements;
+			let inv = User.rgContexts["440"]["2"].inventory?.rgInventory;
 			if (!inv || User.cLoadsInFlight != 0) {
 				if (User.cLoadsInFlight == 0) User.loadInventory();
 				inv = await waitForInventoryLoad();
-			} else inv = inv.map(item => item.rgItem);
+			} else inv = Object.values(inv);
 
 			res(parseInventory(inv));
 		});
 
 		function waitForInventoryLoad() {
 			return new Promise(async res => {
+				let done = false;
+
+				//poll for inventory ready
+				(async () => {
+					let inv = User.rgContexts["440"]["2"].inventory?.rgInventory;
+					while (!inv) {
+						await waitFor(0.5);
+						if (done) return;
+						inv = User.rgContexts["440"]["2"].inventory?.rgInventory;
+					}
+
+					done = true;
+					const parsed_inv = Object.values(inv);
+					res(parsed_inv);
+				})();
+
+				//wait for intercepted request, fast but less reliable
 				const on_load = User.OnLoadInventoryComplete;
 				User.OnLoadInventoryComplete = function (data, appid, contextid) {
 					if (appid == 440 && contextid == 2) {
+						done = true;
 						res(Object.values(data.responseJSON.rgInventory));
 					}
+
+					User.OnLoadInventoryComplete = on_load;
 					return on_load.apply(this, arguments);
 				};
-				const on_fail = User.OnLoadInventoryComplete;
+				const on_fail = User.OnInventoryLoadFailed;
 				User.OnInventoryLoadFailed = async function (data, appid, contextid) {
 					if (appid == 440 && contextid == 2) {
 						console.log("load failed, requesting manually");
 						const inv = await getInventory(User.strSteamId);
+						done = true;
 						res(inv);
 					}
+
+					User.OnInventoryLoadFailed = on_fail;
 					return on_fail.apply(this, arguments);
 				};
 			});
