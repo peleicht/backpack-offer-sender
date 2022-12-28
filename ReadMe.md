@@ -34,9 +34,9 @@ This browser plugin adds a button to backpack.tf listings, which will instantly 
 
 The script is well tested and consistently produces correct results.
 However, there may be some situations in which the script receives bad information, and produces unexpected results.
-This may happen after updates to the backpack.tf or steamcommunity.com websites, or if another extension iterferes with this one.
+This may happen after updates to the backpack.tf or steamcommunity.com websites, or if another extension interferes with this one.
 
-Therefore make sure to <ins>always double check the offer</ins> before confirming it.
+Therefore, make sure to <ins>always double check the offer</ins> before confirming it.
 
 ---
 
