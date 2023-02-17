@@ -56,13 +56,14 @@ async function main() {
 					!item_name.includes("Haunted Metal Scrap") &&
 					!item_name.includes("Horseless Headless Horsemann's Headtaker")
 				) {
-					continue; //ignore generic unusual buy orders;
+					continue; //ignore generic unusual buy orders
 				}
 
 				const attributes = ["data-spell_1", "data-part_name_1", "data-killstreaker", "data-sheen", "data-level", "data-paint_name", "", "", "", ""];
 				let modified = false;
 				for (let a of attributes) {
 					if (info.hasAttribute(a)) {
+						if (a == "data-paint_name" && item_name.includes(info.getAttribute("data-paint_name"))) continue; //dont ignore paint cans (theyre always painted)
 						modified = true;
 						break;
 					}
