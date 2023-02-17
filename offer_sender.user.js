@@ -139,7 +139,8 @@ async function main() {
 			//add new button with item and price info in url query (for next.backpack.tf)
 			const listings = Array.from(document.getElementsByClassName("listing"));
 
-			for (let listing of listings) {
+			for (let i = 0; i < listings.length; i++) {
+				const listing = listings[i];
 				const header = listing.children[0].children[1].children[0]; //everythings a div, nothing has an id why ;(
 
 				//get info
@@ -149,8 +150,8 @@ async function main() {
 					.replace(/ #\d+$/, ""); //\n and # dont work in urls
 
 				const info = listing.children[0].children[0];
-				const id = info.getAttribute("href").replace("/classifieds/", "");
-				const price = listings_data.find(l => l.id == id).value.long;
+				const listing_id = info.getAttribute("href").replace("/classifieds/", "");
+				const price = listings_data.find(l => l.id == listing_id).value.long;
 
 				//ignore buy orders on specific items
 				let item_id_text = "";
@@ -191,8 +192,12 @@ async function main() {
 				const btn_clone = send_offer_btn.cloneNode(true);
 				const url = encodeURI(href + item_id_text + "&tscript_price=" + price + "&tscript_name=" + item_name);
 				btn_clone.setAttribute("href", url);
+				btn_clone.id = "instant-button-" + i;
 				const icon = btn_clone.children[0];
 				icon.style.color = next_btn_color;
+
+				const existing_button = document.getElementById(btn_clone.id); //remove if another button exists already
+				if (existing_button) existing_button.remove();
 
 				btn_box.append(btn_clone);
 			}
