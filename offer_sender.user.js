@@ -59,18 +59,16 @@ async function main() {
 					continue; //ignore generic unusual buy orders
 				}
 
-				const attributes = ["data-spell_1", "data-part_name_1", "data-killstreaker", "data-sheen", "data-level", "data-paint_name", "", "", "", ""];
+				const attributes = ["data-spell_1", "data-part_name_1", "data-killstreaker", "data-sheen", "data-level", "data-paint_name"];
 				let modified = false;
 				for (let a of attributes) {
 					if (info.hasAttribute(a)) {
-						if (a == "data-paint_name" && item_name.includes(info.getAttribute("data-paint_name"))) continue; //dont ignore paint cans (theyre always painted)
+						if (a == "data-paint_name" && item_name.includes(info.getAttribute("data-paint_name"))) continue; //dont ignore paint cans (they're always painted)
 						modified = true;
 						break;
 					}
 				}
-				if (modified) {
-					continue; //ignore modified buy orders
-				}
+				if (modified) continue; //ignore modified buy orders
 			} else {
 				item_id_text = "&tscript_id=" + info.getAttribute("data-id");
 			}
@@ -101,8 +99,7 @@ async function main() {
 		interceptSearchRequests();
 		if (location.pathname.startsWith("/stats")) {
 			await awaitDocumentReady();
-			while (!__NUXT__?.fetch || !__NUXT__.fetch["data-v-58d43071:0"]) {
-				let t = __NUXT__.fetch["data-v-58d43071:0"];
+			while (!__NUXT__?.fetch || !__NUXT__?.fetch["data-v-58d43071:0"]?.listings) {
 				await waitFor(0.1); //wait for listings request ready
 			}
 			const listings = __NUXT__.fetch["data-v-58d43071:0"].listings;
@@ -140,11 +137,12 @@ async function main() {
 
 		function addSenderButtons() {
 			//add new button with item and price info in url query (for next.backpack.tf)
-			let listings = Array.from(document.getElementsByClassName("listing"));
+			const listings = Array.from(document.getElementsByClassName("listing"));
 
 			for (let listing of listings) {
 				const header = listing.children[0].children[1].children[0]; //everythings a div, nothing has an id why ;(
 
+				//get info
 				const item_name = header.children[0].innerText
 					.trim()
 					.replace("\n", " ")
@@ -154,19 +152,38 @@ async function main() {
 				const id = info.getAttribute("href").replace("/classifieds/", "");
 				const price = listings_data.find(l => l.id == id).value.long;
 
+				//ignore buy orders on specific items
 				let item_id_text = "";
 				if (header.getElementsByClassName("text-buy").length != 0) {
-					const special_traits = Array.from(info.children[0].children).map(e => e.getAttribute("class"));
-					for (let trait of special_traits) {
-						if (trait != "item__icons__icon attribute__killstreaker") continue; //ignore modified buy orders for now
+					if (
+						item_name.includes("Unusual") &&
+						!item_name.includes("Haunted Metal Scrap") &&
+						!item_name.includes("Horseless Headless Horsemann's Headtaker")
+					) {
+						continue; //ignore generic unusual buy orders
 					}
+
+					//spell part level sheen
+					const modified_traits = ["fa-wrench", "fa-fill-drip", "-spell", "fa-shoe-prints", "fa-flash-round-potion"];
+					const special_traits = Array.from(info.children[0].children).map(e => e.getAttribute("class"));
+					let modified = false;
+					for (let trait of special_traits) {
+						const found_trait = modified_traits.find(t => trait.includes(t));
+						if (found_trait) {
+							if (found_trait == "fa-fill-drip" && info.getAttribute("style").includes("Paint_Can")) continue; //dont ignore paint cans (they're always painted)
+							modified = true;
+							break;
+						}
+					}
+
+					if (modified) continue; //ignore modified buy orders
 				} else {
 					const id = /\/classifieds\/440_(\d+)/.exec(info.getAttribute("href"));
 					item_id_text = "&tscript_id=" + id[1];
 				}
 
 				const btn_box = header.getElementsByClassName("listing__details__actions")[0];
-				let send_offer_btn = btn_box.getElementsByClassName("listing__details__actions__action")[0];
+				const send_offer_btn = btn_box.getElementsByClassName("listing__details__actions__action")[0];
 				const href = send_offer_btn.getAttribute("href");
 				if (!href || href.startsWith("steam://")) continue;
 
