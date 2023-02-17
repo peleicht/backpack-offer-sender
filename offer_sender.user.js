@@ -38,6 +38,7 @@ async function main() {
 		}
 
 		for (let order of order_elements) {
+			//get item info
 			const header = document.querySelector("#" + order.id + " > div.listing-body > div.listing-header > div.listing-title > h5");
 			const item_name = header.firstChild.textContent
 				.trim()
@@ -47,8 +48,17 @@ async function main() {
 			const info = document.querySelector("#" + order.id + " > div.listing-item > div");
 			const price = info.getAttribute("data-listing_price");
 
+			//ignore specific buy orders
 			let item_id_text = "";
 			if (info.getAttribute("data-listing_intent") == "buy") {
+				if (
+					item_name.includes("Unusual") &&
+					!item_name.includes("Haunted Metal Scrap") &&
+					!item_name.includes("Horseless Headless Horsemann's Headtaker")
+				) {
+					continue; //ignore generic unusual buy orders;
+				}
+
 				const attributes = ["data-spell_1", "data-part_name_1", "data-killstreaker", "data-sheen", "data-level", "data-paint_name", "", "", "", ""];
 				let modified = false;
 				for (let a of attributes) {
@@ -57,7 +67,9 @@ async function main() {
 						break;
 					}
 				}
-				if (modified) continue; //ignore modified buy orders for now
+				if (modified) {
+					continue; //ignore modified buy orders
+				}
 			} else {
 				item_id_text = "&tscript_id=" + info.getAttribute("data-id");
 			}
