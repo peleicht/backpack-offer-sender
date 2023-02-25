@@ -164,7 +164,6 @@ async function main() {
 						continue; //ignore generic unusual buy orders
 					}
 
-					//spell part level sheen
 					const modified_traits = ["fa-wrench", "fa-fill-drip", "-spell", "fa-shoe-prints", "fa-flash-round-potion"];
 					const special_traits = Array.from(info.children[0].children).map(e => e.getAttribute("class"));
 					let modified = false;
@@ -186,7 +185,7 @@ async function main() {
 				const btn_box = header.getElementsByClassName("listing__details__actions")[0];
 				const send_offer_btn = btn_box.getElementsByClassName("listing__details__actions__action")[0];
 				const href = send_offer_btn.getAttribute("href");
-				if (!href || href.startsWith("steam://")) continue;
+				if (!href || href.startsWith("steam://") || href.startsWith("https://marketplace.tf")) continue;
 
 				//add new button
 				const btn_clone = send_offer_btn.cloneNode(true);
