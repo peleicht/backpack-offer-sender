@@ -228,8 +228,8 @@ async function main() {
 			const currencies = toCurrencyTypes(currency_string);
 			const [their_currency, change] = pickCurrency(their_inventory, ...currencies);
 			if (change.find(c => c != 0)) {
-				const [our_currency, change2] = pickCurrency(our_inventory, 0, ...currencies);
-				if (change2.find(c => c != 0)) return throwError("Could not balance currencies");
+				const [our_currency, change2] = pickCurrency(our_inventory, 0, ...change);
+				if (change2.find(c => c != 0)) return throwError("Could not balance currencies.");
 				for (let c of our_currency) items_to_give.push(toTradeOfferItem(c.id));
 			}
 
