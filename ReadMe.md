@@ -1,4 +1,4 @@
-# Automatic Offer Sender for Backpack.tf
+# One-Click Offer for Backpack.tf
 
 This browser plugin adds a button to backpack.tf listings, which will instantly send your offer as specified by the listing.
 
