@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Instant Offer Sender
+// @name         One-Click-Offer
 // @namespace    https://github.com/peleicht/backpack-offer-sender
 // @homepage     https://github.com/peleicht
 // @version      1.3.2
@@ -7,9 +7,11 @@
 // @author       Brom127
 // @updateURL    https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
 // @downloadURL  https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
-// @include      /^https?:\/\/backpack\.tf\/(stats|classifieds|u).*/
-// @include      /^https?:\/\/next\.backpack\.tf\/.*/
-// @include      https://steamcommunity.com/tradeoffer/new*
+// @match        *://backpack.tf/stats/*
+// @match        *://backpack.tf/classifieds/*
+// @match        *://backpack.tf/u/*
+// @match        *://next.backpack.tf/*
+// @match        *://steamcommunity.com/tradeoffer/new*
 // @icon         data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💠</text></svg>
 // @run-at       document-start
 // ==/UserScript==
