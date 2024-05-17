@@ -101,7 +101,7 @@ async function main() {
 		interceptSearchRequests();
 		if (location.pathname.startsWith("/stats")) {
 			await awaitDocumentReady();
-			while (!__NUXT__?.fetch || !__NUXT__?.fetch["data-v-58d43071:0"]?.listings) {
+			while (!__NUXT__?.fetch?.["data-v-58d43071:0"]?.listings && !__NUXT__?.fetch?.["data-v-39eb0133:0"]?.listings) {
 				await waitFor(0.1); //wait for listings request ready
 			}
 			const listings = __NUXT__.fetch["data-v-58d43071:0"].listings;
