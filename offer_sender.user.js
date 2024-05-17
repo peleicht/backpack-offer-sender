@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         One-Click-Offer
+// @name         One-Click Offer
 // @namespace    https://github.com/peleicht/backpack-offer-sender
 // @homepage     https://github.com/peleicht
 // @version      1.3.2
