@@ -104,7 +104,7 @@ async function main() {
 			while (!__NUXT__?.fetch?.["data-v-58d43071:0"]?.listings && !__NUXT__?.fetch?.["data-v-39eb0133:0"]?.listings) {
 				await waitFor(0.1); //wait for listings request ready
 			}
-			const listings = __NUXT__.fetch["data-v-58d43071:0"].listings;
+			const listings = __NUXT__.fetch["data-v-58d43071:0"]?.listings || __NUXT__.fetch["data-v-39eb0133:0"].listings;
 			listings_data = listings.buy.items.concat(listings.sell.items);
 			addSenderButtons();
 		}
@@ -146,10 +146,15 @@ async function main() {
 				const header = listing.children[0].children[1].children[0]; //everythings a div, nothing has an id why ;(
 
 				//get info
-				const item_name = header.children[0].innerText
+				let item_name = header.children[0].innerText
 					.trim()
 					.replace("\n", " ")
 					.replace(/ #\d+$/, ""); //\n and # dont work in urls
+
+				// Next removes Non-Craftable from item names, check from item image
+				if (listing.children[0].children[0].className.includes("uncraftable")) {
+					item_name = "Non-Craftable " + item_name;
+				}
 
 				const info = listing.children[0].children[0];
 				const listing_id = info.getAttribute("href").replace("/classifieds/", "");
@@ -213,13 +218,19 @@ async function main() {
 		const items_to_give = [];
 		const items_to_receive = [];
 
-		const [our_inventory, their_inventory] = await getInventories();
+		let [our_inventory, their_inventory] = await getInventories();
 		window.our_inv = our_inventory;
 		window.their_inv = their_inventory;
 
 		if (!params.has("tscript_id")) {
 			//sell your item
 			const needed_item_name = params.get("tscript_name").replace("u0023", "#");
+
+			if (document.referrer == "https://next.backpack.tf/") {
+				// next backpack uses different item names (e.g. "The" is removed)
+				our_inventory = our_inventory.map(item => ({ ...item, name: normalizeName(item.name) }));
+			}
+
 			const needed_item = our_inventory.find(i => i.name == needed_item_name);
 			if (!needed_item) return throwError("Could not find item in your inventory.");
 
@@ -460,6 +471,20 @@ function nameFromItem(item) {
 	name = name.replace("Series #", "#"); //case 'series' keyword not included in bp names
 	name = name.replace(/ #\d+$/, ""); //remove case number
 
+	return name;
+}
+/**
+ * Normalize to remove any of the following prefixes: "Taunt: ", "The"
+ * @param {String} name
+ * @returns
+ */
+function normalizeName(name) {
+	const prefixes = ["Taunt: ", "The "];
+	for (const prefix of prefixes) {
+		if (name.startsWith(prefix)) {
+			name = name.substring(prefix.length);
+		}
+	}
 	return name;
 }
 
