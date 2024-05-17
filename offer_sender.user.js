@@ -2,7 +2,7 @@
 // @name         Instant Offer Sender
 // @namespace    https://github.com/peleicht/backpack-offer-sender
 // @homepage     https://github.com/peleicht
-// @version      1.3.1
+// @version      1.3.2
 // @description  Adds a button on backpack.tf listings that instantly sends the offer.
 // @author       Brom127
 // @updateURL    https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
@@ -17,7 +17,7 @@
 const allow_change = true;
 const btn_color = "#02d6d6";
 const next_btn_color = "#00ffff";
-const btn_text = "Send Tradeoffer automatically.";
+const btn_text = "One Click Offer ⇄";
 
 let internal_request_sent = false;
 
@@ -662,6 +662,5 @@ function throwError(err) {
 	const pre_string = "Unable to " + buy_sell + " " + item + ": ";
 
 	window.alert(pre_string + err);
-	//window.close();
 	throw err;
 }
