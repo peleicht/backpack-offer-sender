@@ -8,7 +8,7 @@
 // @updateURL    https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
 // @downloadURL  https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
 // @match        *://backpack.tf/stats/*
-// @match        *://backpack.tf/classifieds/*
+// @match        *://backpack.tf/classifieds*
 // @match        *://backpack.tf/u/*
 // @match        *://next.backpack.tf/*
 // @match        *://steamcommunity.com/tradeoffer/new*
