@@ -2,7 +2,7 @@
 // @name         One-Click Offer
 // @namespace    https://github.com/peleicht/backpack-offer-sender
 // @homepage     https://github.com/peleicht
-// @version      1.3.2
+// @version      1.3.4
 // @description  Adds a button on backpack.tf listings that instantly sends the offer.
 // @author       Brom127
 // @updateURL    https://github.com/peleicht/backpack-offer-sender/raw/main/offer_sender.user.js
@@ -559,13 +559,21 @@ function pickCurrency(inventory, keys, ref, rec, scrap) {
 	}
 
 	//use rec if not enough ref
-	while (leftover_ref < 0) {
-		if (leftover_rec >= -leftover_ref * 3) {
-			ref -= -leftover_ref;
-			rec += -leftover_ref * 3;
-			leftover_rec -= -leftover_ref * 3;
-			leftover_ref = 0;
-		}
+	if (leftover_ref < 0) {
+		ref -= -leftover_ref;
+		rec += -leftover_ref * 3;
+		leftover_rec -= -leftover_ref * 3;
+		leftover_ref = 0;
+	}
+
+	//use scrap if not enough rec
+	if (leftover_rec < 0) {
+		if (leftover_scrap < -leftover_rec * 3) return throwError("Insufficient Metal");
+
+		rec -= -leftover_rec;
+		scrap += -leftover_rec * 3;
+		leftover_scrap -= -leftover_rec * 3;
+		leftover_rec = 0;
 	}
 
 	//calculate change needed from other inventory
@@ -626,7 +634,8 @@ function pickCurrency(inventory, keys, ref, rec, scrap) {
 		take_keys.length != keys ||
 		take_ref.length != ref ||
 		take_rec.length != rec ||
-		take_scrap.length != scrap
+		take_scrap.length != scrap ||
+		Math.round((ref + rec / 3 + scrap / 9) * 100) != Math.round((take_ref.length + take_rec.length / 3 + take_scrap.length / 9) * 100)
 	) {
 		console.log("Something went wrong balancing currencies:");
 		console.log(
